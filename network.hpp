@@ -70,15 +70,25 @@ class Linear : public Layer {
 
 class MaxPool2d : public Layer {
     public:
-        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0) : Layer(LayerType::MaxPool2d) {}
-    // TODO
+        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0) 
+		: Layer(LayerType::MaxPool2d) {}
+		kernel_size_(kernel_size),
+	        stride_(stride),
+          	pad_(pad) {}
+
+	Tensor fwd(const Tensor& x) override;
+    private:
+	size_t kernel_size_;
+	size_t stride_;
+	size_t pad_;
 };
 
 
 class ReLu : public Layer {
-    public:
-        ReLu() : Layer(LayerType::ReLu) {}
-    // TODO
+	public:
+    		ReLu() : Layer(LayerType::ReLu) {}
+
+    		Tensor fwd(const Tensor& x) override;
 };
 
 
@@ -116,5 +126,53 @@ class NeuralNetwork {
         bool debug_;
         // TODO: storage for layers
 };
+
+Tensor ReLu::fwd(const Tensor& x) {
+    Tensor y(x.N(), x.C(), x.H(), x.W());
+    for (size_t n = 0; n < x.N(); ++n)
+        for (size_t c = 0; c < x.C(); ++c)
+            for (size_t h = 0; h < x.H(); ++h)
+                for (size_t w = 0; w < x.W(); ++w)
+                    y(n, c, h, w) = std::max(0.0f, x(n,c,h,w));
+    return y;
+}
+
+Tensor MaxPool2d::fwd(const Tensor& x) {
+    size_t N = x.N();
+    size_t C = x.C();
+    size_t H = x.H();
+    size_t W = x.W();
+
+    size_t out_h = (H - kernel_size_) / stride_ + 1;
+    size_t out_w = (W - kernel_size_) / stride_ + 1;
+
+    Tensor y(N, C, out_h, out_w);
+
+    for (size_t n = 0; n < N; ++n) {
+        for (size_t c = 0; c < C; ++c) {
+            for (size_t oh = 0; oh < out_h; ++oh) {
+                for (size_t ow = 0; ow < out_w; ++ow) {
+
+                    float max_val = -1e9;
+
+                    for (size_t kh = 0; kh < kernel_size_; ++kh) {
+                        for (size_t kw = 0; kw < kernel_size_; ++kw) {
+
+                            size_t ih = oh * stride_ + kh;
+                            size_t iw = ow * stride_ + kw;
+
+                            float v = x(n, c, ih, iw);
+                            if (v > max_val) max_val = v;
+                        }
+                    }
+
+                    y(n, c, oh, ow) = max_val;
+                }
+            }
+        }
+    }
+
+    return y;
+}
 
 #endif // NETWORK_HPP
