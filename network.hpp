@@ -137,6 +137,7 @@ Tensor ReLu::fwd(const Tensor& x) {
     return y;
 }
 
+
 Tensor MaxPool2d::fwd(const Tensor& x) {
     size_t N = x.N();
     size_t C = x.C();
