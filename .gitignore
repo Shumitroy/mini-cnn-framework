@@ -1,0 +1,7 @@
+# build artifacts
+lenet
+*.o
+
+# editor temporary files
+*.swp
+*~
