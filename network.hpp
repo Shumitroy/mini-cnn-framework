@@ -95,7 +95,7 @@ class ReLu : public Layer {
 class SoftMax : public Layer {
     public:
         SoftMax() : Layer(LayerType::SoftMax) {}
-    // TODO
+    	Tensor fwd(const Tensor& x) override;
 };
 
 
@@ -204,5 +204,46 @@ Tensor Flatten::fwd(const Tensor& x) {
 
     return y;
 }
+
+Tensor SoftMax::fwd(const Tensor& x) {
+    size_t N = x.N();
+    size_t C = x.C();
+    size_t H = x.H();
+    size_t W = x.W();
+
+    Tensor y(N, C, H, W);
+
+    // Softmax over the channel dimension C
+    for (size_t n = 0; n < N; ++n) {
+        for (size_t h = 0; h < H; ++h) {
+            for (size_t w = 0; w < W; ++w) {
+                // 1) find max for numerical stability
+                float max_val = -1e9f;
+                for (size_t c = 0; c < C; ++c) {
+                    float v = x(n, c, h, w);
+                    if (v > max_val) max_val = v;
+                }
+
+                // 2) compute exp(x - max) and sum
+                float sum_exp = 0.0f;
+                for (size_t c = 0; c < C; ++c) {
+                    float v = std::exp(x(n, c, h, w) - max_val);
+                    y(n, c, h, w) = v;
+                    sum_exp += v;
+                }
+
+                // 3) normalize
+                if (sum_exp > 0.0f) {
+                    for (size_t c = 0; c < C; ++c) {
+                        y(n, c, h, w) /= sum_exp;
+                    }
+                }
+            }
+        }
+    }
+
+    return y;
+}
+
 
 #endif // NETWORK_HPP
