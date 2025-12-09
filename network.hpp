@@ -102,7 +102,7 @@ class SoftMax : public Layer {
 class Flatten : public Layer {
     public:
         Flatten() : Layer(LayerType::Flatten) {}
-    // TODO
+    	Tensor fwd(const tensor& x) override;
 };
 
 
@@ -168,6 +168,35 @@ Tensor MaxPool2d::fwd(const Tensor& x) {
                     }
 
                     y(n, c, oh, ow) = max_val;
+                }
+            }
+        }
+    }
+
+    return y;
+}
+
+Tensor Flatten::fwd(const Tensor& x) {
+
+    size_t N = x.N();
+    size_t C = x.C();
+    size_t H = x.H();
+    size_t W = x.W();
+
+
+    size_t F = C * H * W;
+
+
+    Tensor y(N, F, 1, 1);
+
+    for (size_t n = 0; n < N; ++n) {
+        size_t idx = 0;
+
+        for (size_t c = 0; c < C; ++c) {
+            for (size_t h = 0; h < H; ++h) {
+                for (size_t w = 0; w < W; ++w) {
+                    y(n, idx, 0, 0) = x(n, c, h, w);
+                    ++idx;
                 }
             }
         }
