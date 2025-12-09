@@ -63,20 +63,33 @@ class Conv2d : public Layer {
 
 class Linear : public Layer {
     public:
-        Linear(size_t in_features, size_t out_features) : Layer(LayerType::Linear) {}
-    // TODO
+        Linear(size_t in_features, size_t out_features)
+		: Layer(LayerType::Linear),
+		in_features_(in_features),
+          	out_features_(out_features),
+          	weight_(out_features, in_features, 1, 1),
+          	bias_(1, out_features, 1, 1) {}
+
+    	Tensor fwd(const Tensor& x) override;
+
+    private:
+    	size_t in_features_;
+    	size_t out_features_;
+    	Tensor weight_;
+    	Tensor bias_;
 };
 
 
 class MaxPool2d : public Layer {
     public:
-        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0) 
-		: Layer(LayerType::MaxPool2d) {}
+        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0)
+		: Layer(LayerType::MaxPool2d),
 		kernel_size_(kernel_size),
 	        stride_(stride),
           	pad_(pad) {}
 
 	Tensor fwd(const Tensor& x) override;
+
     private:
 	size_t kernel_size_;
 	size_t stride_;
@@ -213,18 +226,17 @@ Tensor SoftMax::fwd(const Tensor& x) {
 
     Tensor y(N, C, H, W);
 
-    // Softmax over the channel dimension C
+
     for (size_t n = 0; n < N; ++n) {
         for (size_t h = 0; h < H; ++h) {
             for (size_t w = 0; w < W; ++w) {
-                // 1) find max for numerical stability
                 float max_val = -1e9f;
                 for (size_t c = 0; c < C; ++c) {
                     float v = x(n, c, h, w);
                     if (v > max_val) max_val = v;
                 }
 
-                // 2) compute exp(x - max) and sum
+
                 float sum_exp = 0.0f;
                 for (size_t c = 0; c < C; ++c) {
                     float v = std::exp(x(n, c, h, w) - max_val);
@@ -232,13 +244,39 @@ Tensor SoftMax::fwd(const Tensor& x) {
                     sum_exp += v;
                 }
 
-                // 3) normalize
                 if (sum_exp > 0.0f) {
                     for (size_t c = 0; c < C; ++c) {
                         y(n, c, h, w) /= sum_exp;
                     }
                 }
             }
+        }
+    }
+
+    return y;
+}
+
+Tensor Linear::fwd(const Tensor& x) {
+    size_t N = x.N();
+    size_t C = x.C();
+    size_t H = x.H();
+    size_t W = x.W();
+
+
+    Tensor y(N, out_features_, 1, 1);
+
+    for (size_t n = 0; n < N; ++n) {
+        for (size_t o = 0; o < out_features_; ++o) {
+            // start from bias
+            float sum = bias_(0, o, 0, 0);
+
+            for (size_t i = 0; i < in_features_; ++i) {
+                float x_val = x(n, i, 0, 0);
+                float w_val = weight_(o, i, 0, 0);
+                sum += x_val * w_val;
+            }
+
+            y(n, o, 0, 0) = sum;
         }
     }
 
