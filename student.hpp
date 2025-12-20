@@ -4,6 +4,7 @@
 #include <string>
 
 const std::string student_name = "Shumit Roy";
-const int student_id = "00157208";
+const std::string student_id   = "00157208";
 
 #endif // STUDENT_HPP
+
