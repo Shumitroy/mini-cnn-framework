@@ -56,8 +56,30 @@ class Layer {
 
 class Conv2d : public Layer {
     public:
-        Conv2d(size_t in_channels, size_t out_channels, size_t kernel_size, size_t stride=1, size_t pad=0) : Layer(LayerType::Conv2d) {}
-    // TODO
+        Conv2d(size_t in_channels,
+		size_t out_channels,
+		size_t kernel_size,
+		size_t stride=1,
+		size_t pad=0)
+		: Layer(LayerType::Conv2d),
+		in_channels_(in_channels),
+		out_channels_(out_channels),
+		kernel_size_(kernel_size),
+		stride_(stride),
+		pad_(pad),
+		weights_(out_channels, in_channels, kernel_size, kernel_size),
+		bias_(1, out_channels,1 ,1) {}
+	Tensor fwd(const Tensor& x) override;
+    private:
+	size_t in_channels_;
+	size_t out_channels_;
+	size_t kernel_size_;
+	size_t stride_;
+	size_t pad_;
+
+	Tensor weights_;
+	Tensor bias_;
+
 };
 
 
