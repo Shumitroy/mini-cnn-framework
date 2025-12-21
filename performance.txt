@@ -22,13 +22,19 @@ followed by bias addition.
 
 
 Performance impact:
-Measured on the same system using the MNIST inference workload.
-The im2col-based Conv2d implementation reduced runtime from
-approximately 0.48 seconds (master branch) to 0.31 seconds
-(performance branch), resulting in a speedup of ~1.55×.
 
-The improvement is attributed to better cache locality and
-more efficient memory access patterns compared to direct convolution.
+Runtime was measured using end-to-end inference of the LeNet network.
+
+Master branch (direct convolution):
+- Runtime: 0.28 seconds
+
+Performance branch (im2col-based convolution):
+- Runtime: 0.19 seconds
+
+This corresponds to an approximate speedup of 1.47x.
+The improvement is mainly due to better cache locality and reduced redundant
+memory accesses achieved by transforming convolution into a matrix
+multiplication–like operation.
 
 
 Notes:
