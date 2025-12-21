@@ -20,6 +20,8 @@ int argmax_10(const Tensor& out) {
 }
 
 
+
+
 int main(int argc, char** argv) {
         std::cout << "MiniCNN LeNet inference test" << std::endl;
     std::cout << "Student: " << student_name << " (" << student_id << ")" << std::endl;
@@ -53,7 +55,9 @@ if (use_fashion) {
 }
 
 for (int i = 0; i < 10; ++i) {
+
     Tensor img = mnist->at(i);
+    std::cout << "img shape: " << img << std::endl;
     Tensor out = net.predict(img);
     int pred = argmax_10(out);
 
@@ -65,9 +69,24 @@ for (int i = 0; i < 10; ++i) {
         if (d == pred) std::cout << " <-- max";
         std::cout << std::endl;
     }
+
+    std::cout << "Image preview:" << std::endl;
+for (size_t h = 0; h < 28; ++h) {
+    for (size_t w = 0; w < 28; ++w) {
+        float v = img(0, 0, h, w);
+        char ch = ' ';
+        if (v > 0.8f) ch = '#';
+        else if (v > 0.6f) ch = 'O';
+        else if (v > 0.4f) ch = 'o';
+        else if (v > 0.2f) ch = '.';
+        std::cout << ch;
+    }
     std::cout << std::endl;
 }
 
+
+}
 delete mnist;
 return 0;
+
 }
