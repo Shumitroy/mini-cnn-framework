@@ -66,34 +66,71 @@ public:
     }
 
     void fwd() override {
-        const Tensor& x = input_;
-        size_t N = x.N;
-        size_t H = x.H;
-        size_t W = x.W;
+    const Tensor& x = input_;
 
-        size_t out_h = (H + 2 * pad_ - kernel_size_) / stride_ + 1;
-        size_t out_w = (W + 2 * pad_ - kernel_size_) / stride_ + 1;
+    const size_t N = x.N;
+    const size_t C = x.C;
+    const size_t H = x.H;
+    const size_t W = x.W;
 
-        Tensor y(N, out_channels_, out_h, out_w);
+    const size_t K = kernel_size_;
+    const size_t S = stride_;
+    const size_t P = pad_;
 
-        for (size_t n = 0; n < N; ++n)
-            for (size_t oc = 0; oc < out_channels_; ++oc)
-                for (size_t oh = 0; oh < out_h; ++oh)
-                    for (size_t ow = 0; ow < out_w; ++ow) {
-                        float sum = bias_(0, oc, 0, 0);
-                        for (size_t ic = 0; ic < in_channels_; ++ic)
-                            for (size_t kh = 0; kh < kernel_size_; ++kh)
-                                for (size_t kw = 0; kw < kernel_size_; ++kw) {
-                                    int ih = (int)(oh * stride_ + kh) - (int)pad_;
-                                    int iw = (int)(ow * stride_ + kw) - (int)pad_;
-                                    if (ih >= 0 && ih < (int)H && iw >= 0 && iw < (int)W)
-                                        sum += x(n, ic, ih, iw) * weights_(oc, ic, kh, kw);
-                                }
-                        y(n, oc, oh, ow) = sum;
+    const size_t out_h = (H + 2 * P - K) / S + 1;
+    const size_t out_w = (W + 2 * P - K) / S + 1;
+
+    Tensor y(N, out_channels_, out_h, out_w);
+
+    const size_t KKK = C * K * K;
+    const size_t HWo = out_h * out_w;
+
+    std::vector<float> col(KKK * HWo);
+
+    for (size_t n = 0; n < N; ++n) {
+        size_t col_idx = 0;
+        for (size_t oh = 0; oh < out_h; ++oh) {
+            for (size_t ow = 0; ow < out_w; ++ow) {
+                size_t k_idx = 0;
+                for (size_t c = 0; c < C; ++c) {
+                    for (size_t kh = 0; kh < K; ++kh) {
+                        for (size_t kw = 0; kw < K; ++kw) {
+                            const int ih = (int)(oh * S + kh) - (int)P;
+                            const int iw = (int)(ow * S + kw) - (int)P;
+
+                            float v = 0.0f;
+                            if (ih >= 0 && ih < (int)H && iw >= 0 && iw < (int)W) {
+                                v = x(n, c, (size_t)ih, (size_t)iw);
+                            }
+                            col[k_idx * HWo + col_idx] = v;
+                            ++k_idx;
+                        }
                     }
+                }
+                ++col_idx;
+            }
+        }
 
-        output_ = y;
+        for (size_t oc = 0; oc < out_channels_; ++oc) {
+            for (size_t pos = 0; pos < HWo; ++pos) {
+                float sum = bias_(0, oc, 0, 0);
+                for (size_t k = 0; k < KKK; ++k) {
+                    const size_t ic = k / (K * K);
+                    const size_t rem = k % (K * K);
+                    const size_t kh = rem / K;
+                    const size_t kw = rem % K;
+                    sum += weights_(oc, ic, kh, kw) * col[k * HWo + pos];
+                }
+                const size_t oh = pos / out_w;
+                const size_t ow = pos % out_w;
+                y(n, oc, oh, ow) = sum;
+            }
+        }
     }
+
+    output_ = y;
+}
+
 
     void read_weights_bias(std::ifstream& is) override {
     size_t wcount = weights_.N * weights_.C * weights_.H * weights_.W;
