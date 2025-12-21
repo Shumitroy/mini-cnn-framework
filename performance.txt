@@ -1,0 +1,13 @@
+Task 2 – Performance Optimization
+
+Baseline:
+The master branch implements a direct convolution algorithm.
+
+Optimization:
+(To be implemented)
+
+Performance impact:
+(To be measured and described)
+
+Notes:
+Data layout and algorithm changes will be documented here.
