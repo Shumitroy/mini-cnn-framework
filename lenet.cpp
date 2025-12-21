@@ -40,15 +40,21 @@ int main() {
     net.add(new Linear(120, 10));
     net.add(new SoftMax());
 
-    net.load("lenet.raw");
+    bool use_fashion = true;   // change to false for digit MNIST
 
-    MNIST mnist("t10k-images-idx3-ubyte");
-    Tensor img = mnist.at(0);
+MNIST* mnist = nullptr;
 
-    Tensor out = net.predict(img);
-    for (int i = 0; i < 10; ++i) {
-    Tensor img = mnist.at(i);
-    Tensor out = net.predict(img);
+if (use_fashion) {
+    net.load("data-fashion-mnist-lenet.raw");
+    mnist = new MNIST("data-fashion-mnist-t10k-images-idx3-ubyte");
+	} else {
+    	net.load("lenet.raw");
+    	mnist = new MNIST("t10k-images-idx3-ubyte");
+	}
+
+	Tensor img = mnist->at(0);
+	Tensor out = net.predict(img);
+
 
     int pred = argmax_10(out);
 
