@@ -46,30 +46,15 @@ public:
                   value);
     }
 
-
-    size_t N_() const { return N; }
-    size_t C_() const { return C; }
-    size_t H_() const { return H; }
-    size_t W_() const { return W; }
-
-
-    size_t N() const { return this->N; }
-    size_t C() const { return this->C; }
-    size_t H() const { return this->H; }
-    size_t W() const { return this->W; }
-
-
-
-    float& operator()(size_t n, size_t c = 0, size_t h = 0, size_t w = 0) {
+    float& operator()(size_t n, size_t c=0, size_t h=0, size_t w=0) {
         size_t idx = ((n * C + c) * H + h) * W + w;
         return (*data_)[offset_ + idx];
     }
 
-    const float& operator()(size_t n, size_t c = 0, size_t h = 0, size_t w = 0) const {
+    const float& operator()(size_t n, size_t c=0, size_t h=0, size_t w=0) const {
         size_t idx = ((n * C + c) * H + h) * W + w;
         return (*data_)[offset_ + idx];
     }
-
 
     Tensor slice(size_t idx, size_t num) const {
         size_t off = offset_ + idx * C * H * W;
@@ -92,5 +77,5 @@ inline std::ostream& operator<<(std::ostream& os, const Tensor& t) {
     return t.write(os);
 }
 
-#endif
+#endif // TENSOR_HPP
 
