@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     net.add(new Linear(120, 10));
     net.add(new SoftMax());
 
-    bool use_fashion = false;
+    bool use_fashion = true;
 
 MNIST* mnist = nullptr;
 
