@@ -96,9 +96,13 @@ public:
     }
 
     void read_weights_bias(std::ifstream& is) override {
-        is.read(reinterpret_cast<char*>(weights_.data()), sizeof(float)*weights_.N*weights_.C*weights_.H*weights_.W);
-        is.read(reinterpret_cast<char*>(bias_.data()), sizeof(float)*bias_.N*bias_.C*bias_.H*bias_.W);
-    }
+    size_t wcount = weights_.N * weights_.C * weights_.H * weights_.W;
+    size_t bcount = bias_.N * bias_.C * bias_.H * bias_.W;
+
+    is.read(reinterpret_cast<char*>(weights_.data()), sizeof(float) * wcount);
+    is.read(reinterpret_cast<char*>(bias_.data()), sizeof(float) * bcount);
+}
+
 
 private:
     size_t in_channels_;
@@ -111,7 +115,9 @@ private:
 class Linear : public Layer {
 public:
     Linear(size_t in_f, size_t out_f)
-        : Layer(LayerType::Linear), in_features_(in_f), out_features_(out_f)
+        : Layer(LayerType::Linear),
+          in_features_(in_f),
+          out_features_(out_f)
     {
         weights_ = Tensor(out_features_, in_features_, 1, 1);
         bias_ = Tensor(1, out_features_, 1, 1);
@@ -135,14 +141,18 @@ public:
     }
 
     void read_weights_bias(std::ifstream& is) override {
-        is.read(reinterpret_cast<char*>(weights_.data()), sizeof(float)*weights_.N*weights_.C*weights_.H*weights_.W);
-        is.read(reinterpret_cast<char*>(bias_.data()), sizeof(float)*bias_.N*bias_.C*bias_.H*bias_.W);
+        is.read(reinterpret_cast<char*>(weights_.data()),
+                sizeof(float) * weights_.N * weights_.C * weights_.H * weights_.W);
+
+        is.read(reinterpret_cast<char*>(bias_.data()),
+                sizeof(float) * bias_.N * bias_.C * bias_.H * bias_.W);
     }
 
 private:
     size_t in_features_;
     size_t out_features_;
 };
+
 
 class MaxPool2d : public Layer {
 public:
@@ -261,8 +271,9 @@ public:
 
     void add(Layer* l) { layers_.push_back(l); }
 
-    void load(std::string file) {
+    void load(const std::string& file) {
         std::ifstream is(file, std::ios::binary);
+        if (!is) throw std::runtime_error("Could not open weight file: " + file);
         for (auto* l : layers_) l->read_weights_bias(is);
     }
 
@@ -279,6 +290,7 @@ private:
     bool debug_;
     std::vector<Layer*> layers_;
 };
+
 
 #endif
 

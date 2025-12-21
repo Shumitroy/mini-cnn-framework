@@ -6,6 +6,20 @@
 
 #include <iostream>
 
+int argmax_10(const Tensor& out) {
+    int best_idx = 0;
+    float best_val = out(0, 0, 0, 0);
+    for (int c = 1; c < 10; ++c) {
+        float v = out(0, c, 0, 0);
+        if (v > best_val) {
+            best_val = v;
+            best_idx = c;
+        }
+    }
+    return best_idx;
+}
+
+
 int main() {
         std::cout << "MiniCNN LeNet inference test" << std::endl;
     std::cout << "Student: " << student_name << " (" << student_id << ")" << std::endl;
@@ -32,9 +46,26 @@ int main() {
     Tensor img = mnist.at(0);
 
     Tensor out = net.predict(img);
+    for (int i = 0; i < 10; ++i) {
+    Tensor img = mnist.at(i);
+    Tensor out = net.predict(img);
 
-    std::cout << "Output probabilities:" << std::endl;
-    std::cout << out << std::endl;
+    int pred = argmax_10(out);
+
+    std::cout << "Image " << i << " -> predicted digit: " << pred << std::endl;
+    std::cout << "Probabilities:" << std::endl;
+
+    for (int d = 0; d < 10; ++d) {
+        std::cout << "  " << d << ": " << out(0, d, 0, 0);
+        if (d == pred) std::cout << "  <-- max";
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+}
+
+
+
 
 
     return 0;
