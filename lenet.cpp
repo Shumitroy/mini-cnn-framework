@@ -20,7 +20,7 @@ int argmax_10(const Tensor& out) {
 }
 
 
-int main() {
+int main(int argc, char** argv) {
         std::cout << "MiniCNN LeNet inference test" << std::endl;
     std::cout << "Student: " << student_name << " (" << student_id << ")" << std::endl;
 
@@ -40,39 +40,34 @@ int main() {
     net.add(new Linear(120, 10));
     net.add(new SoftMax());
 
-    bool use_fashion = true;   // change to false for digit MNIST
+    bool use_fashion = false;
 
 MNIST* mnist = nullptr;
 
 if (use_fashion) {
     net.load("data-fashion-mnist-lenet.raw");
     mnist = new MNIST("data-fashion-mnist-t10k-images-idx3-ubyte");
-	} else {
-    	net.load("lenet.raw");
-    	mnist = new MNIST("t10k-images-idx3-ubyte");
-	}
+} else {
+    net.load("lenet.raw");
+    mnist = new MNIST("t10k-images-idx3-ubyte");
+}
 
-	Tensor img = mnist->at(0);
-	Tensor out = net.predict(img);
-
-
+for (int i = 0; i < 10; ++i) {
+    Tensor img = mnist->at(i);
+    Tensor out = net.predict(img);
     int pred = argmax_10(out);
 
-    std::cout << "Image " << i << " -> predicted digit: " << pred << std::endl;
+    std::cout << "Image " << i << " -> predicted class: " << pred << std::endl;
     std::cout << "Probabilities:" << std::endl;
 
     for (int d = 0; d < 10; ++d) {
-        std::cout << "  " << d << ": " << out(0, d, 0, 0);
-        if (d == pred) std::cout << "  <-- max";
+        std::cout << " " << d << ": " << out(0, d, 0, 0);
+        if (d == pred) std::cout << " <-- max";
         std::cout << std::endl;
     }
-
     std::cout << std::endl;
 }
 
-
-
-
-
-    return 0;
+delete mnist;
+return 0;
 }
