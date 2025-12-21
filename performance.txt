@@ -4,7 +4,21 @@ Baseline:
 The master branch implements a direct convolution algorithm.
 
 Optimization:
-(To be implemented)
+Conv2d forward changed from direct convolution to im2col + GEMM-like dot products
+In Task 2, the convolution implementation from Task 1 was optimized by
+replacing the direct convolution algorithm with an im2col-based approach.
+
+In the master branch (Task 1), Conv2d was implemented using nested loops
+over batch, output channels, spatial dimensions, input channels, and kernel
+dimensions. This approach is simple but inefficient due to poor cache
+locality and repeated memory accesses.
+
+In the performance branch, the Conv2d forward pass was rewritten using the
+im2col algorithm. The input tensor is first transformed into a column
+matrix where each column represents a flattened receptive field of the
+convolution kernel. The convolution operation is then computed as a
+matrix–vector dot product between the kernel weights and the im2col matrix,
+followed by bias addition.
 
 Performance impact:
 (To be measured and described)
