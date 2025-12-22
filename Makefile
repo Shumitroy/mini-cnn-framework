@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O2 -Wall
+CXXFLAGS = -std=c++17 -O2 -Wall -DMNIST_PRE_PAD
 
 TARGET = lenet
 SRCS = lenet.cpp

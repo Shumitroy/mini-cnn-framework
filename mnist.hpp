@@ -68,7 +68,7 @@ class MNIST {
         }
 
         Tensor slice(size_t idx, size_t num) {
-            assert(idx + num < imgs_.N && "index out of bounds");
+            assert(idx + num <= imgs_.N && "index out of bounds");
             return imgs_.slice(idx, num);
         }
 
