@@ -4,27 +4,100 @@
 #include "student.hpp"
 #include "minicnn_task.hpp"
 
+#include <algorithm>
+#include <cstdint>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-int argmax_10(const Tensor& out) {
-    int best_idx = 0;
-    float best_val = out(0, 0, 0, 0);
-    for (int c = 1; c < 10; ++c) {
-        float v = out(0, c, 0, 0);
-        if (v > best_val) {
-            best_val = v;
-            best_idx = c;
-        }
-    }
-    return best_idx;
+static bool is_little_endian() {
+    int n = 1;
+    return *(char*)&n == 1;
 }
 
+static uint32_t bswap_u32(uint32_t v) {
+    return ((v & 0x000000FFu) << 24) |
+           ((v & 0x0000FF00u) << 8)  |
+           ((v & 0x00FF0000u) >> 8)  |
+           ((v & 0xFF000000u) >> 24);
+}
 
+static std::vector<uint8_t> load_mnist_labels(const std::string& path) {
+    std::ifstream is(path.c_str(), std::ios::binary);
+    if (!is) throw std::runtime_error("Could not open labels file");
 
+    uint32_t magic = 0, num = 0;
+    is.read(reinterpret_cast<char*>(&magic), 4);
+    is.read(reinterpret_cast<char*>(&num), 4);
+
+    if (is_little_endian()) {
+        magic = bswap_u32(magic);
+        num   = bswap_u32(num);
+    }
+
+    if (magic != 0x00000801u)
+        throw std::runtime_error("Wrong MNIST label file");
+
+    std::vector<uint8_t> labels(num);
+    is.read(reinterpret_cast<char*>(labels.data()), num);
+    return labels;
+}
+
+static int argmax_10(const Tensor& out) {
+    int best = 0;
+    float bestv = out(0,0,0,0);
+    for (int i = 1; i < 10; ++i) {
+        float v = out(0,i,0,0);
+        if (v > bestv) {
+            bestv = v;
+            best = i;
+        }
+    }
+    return best;
+}
+
+static const char* fashion_name(int c) {
+    static const char* names[10] = {
+        "T-shirt/top","Trouser","Pullover","Dress","Coat",
+        "Sandal","Shirt","Sneaker","Bag","Ankle boot"
+    };
+    return names[c];
+}
+
+static char pix(float v) {
+    if (v > 0.8f) return '#';
+    if (v > 0.6f) return 'O';
+    if (v > 0.4f) return 'o';
+    if (v > 0.2f) return '.';
+    return ' ';
+}
+
+static void print_image(const Tensor& img) {
+    size_t start = (img.H > 28) ? (img.H - 28) / 2 : 0;
+    for (size_t h = 0; h < 28; ++h) {
+        for (size_t w = 0; w < 28; ++w)
+            std::cout << pix(img(0,0,start+h,start+w));
+        std::cout << "\n";
+    }
+}
 
 int main(int argc, char** argv) {
-        std::cout << "MiniCNN LeNet inference test" << std::endl;
-    std::cout << "Student: " << student_name << " (" << student_id << ")" << std::endl;
+    std::cout << "MiniCNN LeNet inference test\n";
+    std::cout << "Student: " << student_name
+              << " (" << student_id << ")\n";
+
+    bool use_fashion = true;
+    bool show = false;
+
+    for (int i = 1; i < argc; ++i) {
+        std::string a = argv[i];
+        if (a == "--mnist")   use_fashion = false;
+        if (a == "--fashion") use_fashion = true;
+        if (a == "--show")    show = true;
+    }
 
     NeuralNetwork net(false);
 
@@ -37,56 +110,71 @@ int main(int argc, char** argv) {
     net.add(new MaxPool2d(2, 2));
 
     net.add(new Flatten());
-    net.add(new Linear(256, 120));
+    net.add(new Linear(400, 120));
     net.add(new ReLu());
-    net.add(new Linear(120, 10));
+    net.add(new Linear(120, 84));
+    net.add(new ReLu());
+    net.add(new Linear(84, 10));
     net.add(new SoftMax());
 
-    bool use_fashion = true;
+    std::string wfile, ifile, lfile;
 
-MNIST* mnist = nullptr;
-
-if (use_fashion) {
-    net.load("data-fashion-mnist-lenet.raw");
-    mnist = new MNIST("data-fashion-mnist-t10k-images-idx3-ubyte");
-} else {
-    net.load("lenet.raw");
-    mnist = new MNIST("t10k-images-idx3-ubyte");
-}
-
-for (int i = 0; i < 10; ++i) {
-
-    Tensor img = mnist->at(i);
-    std::cout << "img shape: " << img << std::endl;
-    Tensor out = net.predict(img);
-    int pred = argmax_10(out);
-
-    std::cout << "Image " << i << " -> predicted class: " << pred << std::endl;
-    std::cout << "Probabilities:" << std::endl;
-
-    for (int d = 0; d < 10; ++d) {
-        std::cout << " " << d << ": " << out(0, d, 0, 0);
-        if (d == pred) std::cout << " <-- max";
-        std::cout << std::endl;
+    if (use_fashion) {
+        wfile = "data-fashion-mnist-lenet.raw";
+        ifile = "data-fashion-mnist-t10k-images-idx3-ubyte";
+        lfile = "data-fashion-mnist-t10k-labels-idx1-ubyte";
+    } else {
+        wfile = "lenet.raw";
+        ifile = "t10k-images-idx3-ubyte";
+        lfile = "t10k-labels-idx1-ubyte";
     }
 
-    std::cout << "Image preview:" << std::endl;
-for (size_t h = 0; h < 28; ++h) {
-    for (size_t w = 0; w < 28; ++w) {
-        float v = img(0, 0, h, w);
-        char ch = ' ';
-        if (v > 0.8f) ch = '#';
-        else if (v > 0.6f) ch = 'O';
-        else if (v > 0.4f) ch = 'o';
-        else if (v > 0.2f) ch = '.';
-        std::cout << ch;
+    net.load(wfile);
+
+    MNIST images(ifile);
+    auto labels = load_mnist_labels(lfile);
+
+    size_t N = std::min<size_t>(10000, labels.size());
+    size_t correct = 0;
+
+    for (size_t i = 0; i < N; ++i) {
+        Tensor img = images.at(i);
+        Tensor out = net.predict(img);
+
+        int pred = argmax_10(out);
+        int gt   = labels[i];
+
+        if (pred == gt) ++correct;
+
+        if (show && i < 10) {
+            if (use_fashion)
+                std::cout << "Image " << i << " pred=" << pred
+                          << " (" << fashion_name(pred) << ")"
+                          << " gt=" << gt
+                          << " (" << fashion_name(gt) << ")\n";
+            else
+                std::cout << "Image " << i << " pred=" << pred
+                          << " gt=" << gt << "\n";
+
+            std::cout << "Probabilities:\n";
+            for (int c = 0; c < 10; ++c) {
+                std::cout << " " << c << ": "
+                          << std::fixed << std::setprecision(6)
+                          << out(0,c,0,0);
+                if (c == pred) std::cout << " <-- max";
+                std::cout << "\n";
+            }
+
+            std::cout << "Image preview:\n";
+            print_image(img);
+            std::cout << "\n";
+        }
     }
-    std::cout << std::endl;
+
+    float acc = float(correct) / float(N);
+    std::cout << "Accuracy: " << std::fixed << std::setprecision(4)
+              << acc << " (" << correct << "/" << N << ")\n";
+
+    return 0;
 }
 
-
-}
-delete mnist;
-return 0;
-
-}
