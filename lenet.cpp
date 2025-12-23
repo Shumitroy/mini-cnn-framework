@@ -85,7 +85,7 @@ static char pix(float v) {
 }
 
 static void print_image_28x28(const Tensor& img) {
-    size_t start = (img.H >= 32 && img.W >= 32) ? 2 : 0; // if padded, skip 2-pixel border
+    size_t start = (img.H >= 32 && img.W >= 32) ? 2 : 0;
     for (size_t h = start; h < start + 28; ++h) {
         for (size_t w = start; w < start + 28; ++w) {
             std::cout << pix(img(0, 0, h, w));
@@ -99,8 +99,8 @@ int main(int argc, char** argv) {
     std::cout << "MiniCNN LeNet inference test" << std::endl;
     std::cout << "Student: " << student_name << " (" << student_id << ")" << std::endl;
 
-    bool use_fashion = false; //make it false to see mnist_number
-    bool show_some = false; //make it true to show some image
+    bool use_fashion = true;
+    bool show_some = false;
 
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
