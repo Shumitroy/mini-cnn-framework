@@ -1,41 +1,53 @@
-Task 2 – Performance Optimization
+Task 2 – Performance Optimization (im2col)
 
-Baseline:
-The master branch implements a direct convolution algorithm.
+Baseline (master branch):
+- Conv2d forward implemented as direct convolution with nested loops over:
+  N, out_channels, out_h/out_w, in_channels, kernel_h/kernel_w.
+- This is simple but has poor cache locality and repeated memory accesses.
 
-Optimization:
-Conv2d forward changed from direct convolution to im2col + GEMM-like dot products
-In Task 2, the convolution implementation from Task 1 was optimized by
-replacing the direct convolution algorithm with an im2col-based approach.
+Optimization (performance branch):
+- Replaced direct Conv2d with an im2col-based approach:
+  1) For each input image, unfold each KxK receptive field into a column matrix (im2col).
+     Shape: (C*K*K) x (out_h*out_w)
+  2) Compute convolution as a GEMM-like operation:
+     Y = W * col + bias
+     where W has shape (out_channels) x (C*K*K)
+  3) Reshape the result back to (N, out_channels, out_h, out_w)
 
-In the master branch (Task 1), Conv2d was implemented using nested loops
-over batch, output channels, spatial dimensions, input channels, and kernel
-dimensions. This approach is simple but inefficient due to poor cache
-locality and repeated memory accesses.
+Correctness:
+- The network architecture and weight-loading remain identical to master.
+- Accuracy remains consistent with the expected pretrained LeNet weights:
+  MNIST ~0.98 and Fashion-MNIST ~0.86 (depending on dataset selection and padding).
 
-In the performance branch, the Conv2d forward pass was rewritten using the
-im2col algorithm. The input tensor is first transformed into a column
-matrix where each column represents a flattened receptive field of the
-convolution kernel. The convolution operation is then computed as a
-matrix–vector dot product between the kernel weights and the im2col matrix,
-followed by bias addition.
+Timing setup:
+- Measured end-to-end runtime for 10k test images using:
+  /usr/bin/time -f "%e s" ./lenet --mnist  > /dev/null
+  /usr/bin/time -f "%e s" ./lenet --fashion > /dev/null
+- Each configuration was executed 5 times.
 
+Results (5 runs, seconds):
 
-Performance impact:
+MASTER MNIST:
+- 6.89, 6.76, 6.87, 6.97, 6.94
+Average ≈ 6.89 s
 
-Runtime was measured using end-to-end inference of the LeNet network.
+MASTER Fashion-MNIST:
+- 6.93, 6.92, 6.85, 6.80, 6.88
+Average ≈ 6.88 s
 
-Master branch (direct convolution):
-- Runtime: 0.28 seconds
+PERFORMANCE (im2col) MNIST:
+- 2.59, 2.60, 2.64, 2.62, 2.61
+Average ≈ 2.61 s
 
-Performance branch (im2col-based convolution):
-- Runtime: 0.19 seconds
+PERFORMANCE (im2col) Fashion-MNIST:
+- 2.63, 2.61, 2.57, 2.53, 2.49
+Average ≈ 2.57 s
 
-This corresponds to an approximate speedup of 1.47x.
-The improvement is mainly due to better cache locality and reduced redundant
-memory accesses achieved by transforming convolution into a matrix
-multiplication–like operation.
-
+Speedup (using averages):
+- MNIST:   6.89 / 2.61 ≈ 2.64x faster
+- Fashion: 6.88 / 2.57 ≈ 2.68x faster
 
 Notes:
-Data layout and algorithm changes will be documented here.
+- The goal of Task 2 is to use an alternative algorithm (im2col) with correct results.
+- Performance can vary depending on CPU, compiler flags, and memory/cache behavior.
+
