@@ -5,6 +5,10 @@ lenet
 # editor temporary files
 *.swp
 *~
+*:Zone.Identifier
+*.Zone.Identifier
+
+lenet.raw
 
 # dataset
 t10k-images-idx3-ubyte
