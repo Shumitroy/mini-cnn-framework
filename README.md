@@ -21,3 +21,10 @@ make
 ## Example Output
 MiniCNN LeNet inference test
 Accuracy: 0.8450 (8450/10000)
+## Acknowledgement
+
+This project was developed as part of the course
+"Systems Engineering and Architecting for Edge Computing"
+An der Technischen Hochschule Ingolstadt.
+
+The course instructor provided the initial project skeleton.
