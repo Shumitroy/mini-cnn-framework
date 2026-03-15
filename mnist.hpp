@@ -5,7 +5,9 @@
 #include <cassert>
 #include <cstdint>
 #include <fstream>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include "tensor.hpp"
 
@@ -16,81 +18,83 @@
 #endif
 
 class MNIST {
-    public:
-        // train-images-idx3-ubyte: training set images
-        // train-labels-idx1-ubyte: training set labels
-        // t10k-images-idx3-ubyte:  test set images
-        // t10k-labels-idx1-ubyte:  test set labels
-        MNIST(std::string path) : pad_(PRE_PAD), path_(path) {
-            load();
+public:
+    MNIST(std::string path) : pad_(PRE_PAD), path_(std::move(path)) {
+        load();
+    }
+
+    void load() {
+        uint32_t magic_number = 0, num_imgs = 0, num_rows = 0, num_cols = 0;
+
+        std::ifstream is(path_.c_str(), std::ios::in | std::ios::binary);
+        assert(is && "could not open MNIST file");
+
+        is.read(reinterpret_cast<char*>(&magic_number), 4);
+        is.read(reinterpret_cast<char*>(&num_imgs), 4);
+        is.read(reinterpret_cast<char*>(&num_rows), 4);
+        is.read(reinterpret_cast<char*>(&num_cols), 4);
+        assert(is && "could not read MNIST header");
+
+        if (is_little_endian()) {
+            std::reverse(reinterpret_cast<char*>(&magic_number),
+                         reinterpret_cast<char*>(&magic_number) + sizeof(uint32_t));
+            std::reverse(reinterpret_cast<char*>(&num_imgs),
+                         reinterpret_cast<char*>(&num_imgs) + sizeof(uint32_t));
+            std::reverse(reinterpret_cast<char*>(&num_rows),
+                         reinterpret_cast<char*>(&num_rows) + sizeof(uint32_t));
+            std::reverse(reinterpret_cast<char*>(&num_cols),
+                         reinterpret_cast<char*>(&num_cols) + sizeof(uint32_t));
         }
 
-        void load() {
-            uint32_t magic_number, num_imgs, num_rows, num_cols;
+        assert(magic_number == 0x00000803 && "expected MNIST image file format");
+        assert(num_rows == 28 && num_cols == 28 && "expected images of size 28x28");
 
-            std::ifstream is(path_.c_str(), std::ios::in | std::ios::binary);
-            is.read(reinterpret_cast<char *>(&magic_number), 4);
-            is.read(reinterpret_cast<char *>(&num_imgs), 4);
-            is.read(reinterpret_cast<char *>(&num_rows), 4);
-            is.read(reinterpret_cast<char *>(&num_cols), 4);
+        imgs_ = Tensor(num_imgs, 1, 28 + 2 * pad_, 28 + 2 * pad_);
+        if (pad_) imgs_.fill(0.0f);
 
-            if (is_little_endian()) {
-                std::reverse(reinterpret_cast<char *>(&magic_number), reinterpret_cast<char *>(&magic_number) + sizeof(uint32_t));
-                std::reverse(reinterpret_cast<char *>(&num_imgs), reinterpret_cast<char *>(&num_imgs) + sizeof(uint32_t));
-                std::reverse(reinterpret_cast<char *>(&num_rows), reinterpret_cast<char *>(&num_rows) + sizeof(uint32_t));
-                std::reverse(reinterpret_cast<char *>(&num_cols), reinterpret_cast<char *>(&num_cols) + sizeof(uint32_t));
-            }
+        for (size_t n = 0; n < num_imgs; ++n) {
+            for (size_t h = 0; h < 28; ++h) {
+                for (size_t w = 0; w < 28; ++w) {
+                    uint8_t byte = 0;
+                    is.read(reinterpret_cast<char*>(&byte), 1);
+                    assert(is && "unexpected EOF while reading MNIST image data");
 
-            assert(magic_number == 0x00000803 && "expected MNIST image file format");
-            assert(num_rows == 28 && num_cols == 28 && "expected images of size 28x28");
-
-            imgs_ = Tensor(num_imgs, 1, 28 + 2 * pad_, 28 + 2 * pad_);
-            if (pad_)
-                imgs_.fill(0);
-            for (size_t n = 0; n < num_imgs; ++n) {
-                for (size_t h = 0; h < 28; ++h) {
-                    for (size_t w = 0; w < 28; ++w) {
-                        uint8_t byte;
-                        is.read(reinterpret_cast<char *>(&byte), 1);
-                        // scale to 0.0 .. 1.0
-                        float pixel = byte / 255.f;
-                        //// normalize
-                        //float mean = 0.1307f, stdev = 0.3081f;
-                        //pixel = (pixel - mean) / stdev;
-                        imgs_(n, 0, h + pad_, w + pad_) = pixel;
-                    }
+                    float pixel = static_cast<float>(byte) / 255.0f;
+                    imgs_(n, 0, h + pad_, w + pad_) = pixel;
                 }
             }
         }
+    }
 
-        Tensor at(size_t idx) {
-            return slice(idx, 1);
-        }
+    Tensor at(size_t idx) {
+        return slice(idx, 1);
+    }
 
-        Tensor slice(size_t idx, size_t num) {
-            assert(idx + num <= imgs_.N && "index out of bounds");
-            return imgs_.slice(idx, num);
-        }
+    Tensor slice(size_t idx, size_t num) {
+        assert(idx + num <= imgs_.N && "index out of bounds");
+        return imgs_.slice(idx, num);
+    }
 
-        void print(size_t idx) {
-            auto img = at(idx);
-            for (size_t h = pad_; h < 28 + pad_; ++h) {
-                for (size_t w = pad_; w < 28 + pad_; ++w) {
-                    int val = (int)(img(0, 0, h, w) * 255.f);
-                    std::cout << (val > 0 ? "x" : " ");
-                }
-                std::cout << std::endl;
+    void print(size_t idx) {
+        auto img = at(idx);
+        for (size_t h = pad_; h < 28 + pad_; ++h) {
+            for (size_t w = pad_; w < 28 + pad_; ++w) {
+                int val = static_cast<int>(img(0, 0, h, w) * 255.0f);
+                std::cout << (val > 0 ? "x" : " ");
             }
+            std::cout << '\n';
         }
+    }
 
-    private:
-        bool is_little_endian() {
-            int n = 1;
-            return *(char *)&n == 1;
-        }
-        Tensor imgs_;
-        size_t pad_;
-        std::string path_;
+private:
+    static bool is_little_endian() {
+        int n = 1;
+        return *reinterpret_cast<char*>(&n) == 1;
+    }
+
+    Tensor imgs_;
+    size_t pad_;
+    std::string path_;
 };
 
 #endif // MNIST_HPP
