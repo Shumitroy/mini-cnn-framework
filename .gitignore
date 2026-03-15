@@ -14,3 +14,13 @@ t10k-images-idx3-ubyte
 data-fashion-mnist-lenet.raw
 data-fashion-mnist-t10k-images-idx3-ubyte
 lenet.raw
+# datasets
+*.raw
+t10k-*
+data-fashion-mnist*
+
+# bundles
+*.bundle
+
+# windows metadata
+*:Zone.Identifier
