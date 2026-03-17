@@ -57,38 +57,57 @@ Optional:
 
 ---
 ---
+Performance Optimization (Task 2)
 
-## Performance Optimization (Task 2)
+The `performance` branch replaces direct convolution with an **im2col-based implementation**.
+This transforms convolution into a matrix-style computation, improving cache efficiency and reducing runtime.
 
-The performance branch replaces direct convolution with an im2col-based implementation. This transforms convolution into a more efficient matrix-style computation, improving cache behavior and reducing runtime.
+---
 
 Baseline (master)
+
 • Direct convolution using nested loops
-• Simpler implementation, but slower runtime
+• Simpler implementation
+• Slower runtime
+
+---
 
 Optimized (performance)
+
 • im2col transformation + GEMM-like computation
 • Better memory access pattern
 • Faster inference with the same model structure
 
+---
+
 Benchmark Summary
 
-Configuration	Dataset	Avg Runtime
-master	MNIST	6.89 s
-performance	MNIST	2.61 s
-master	Fashion-MNIST	6.88 s
-performance	Fashion-MNIST	2.57 s
+Configuration     Dataset           Avg Runtime
+master            MNIST             6.89 s
+performance       MNIST             2.61 s
+master            Fashion-MNIST     6.88 s
+performance       Fashion-MNIST     2.57 s
+
+---
 
 Speedup
-• MNIST: 2.64x faster
-• Fashion-MNIST: 2.68x faster
-### Improvements
 
-- Reduced runtime compared to baseline direct convolution
-- Better cache utilization
-- More efficient computation for repeated inference
+• MNIST → 2.64× faster
+• Fashion-MNIST → 2.68× faster
 
-This demonstrates a transition from a correctness-focused implementation (Task 1) to a performance-optimized system (Task 2), which is critical in edge AI and real-time systems.
+---
+
+Improvements
+
+• Reduced runtime compared to baseline
+• Better cache utilization
+• More efficient computation for repeated inference
+
+---
+
+This demonstrates a transition from a correctness-focused implementation (Task 1)
+to a performance-optimized system (Task 2), which is important in edge AI and real-time systems.
+
 
 ---
 ## Example Predictions
@@ -98,6 +117,7 @@ This demonstrates a transition from a correctness-focused implementation (Task 1
 ![MNIST Example 1](assets/mnist_example1.png)
 ![MNIST Example 2](assets/mnist_example2.png)
 ![MNIST Example 3](assets/mnist_example3.png)
+
 
 ---
 
