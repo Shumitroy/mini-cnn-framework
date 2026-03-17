@@ -18,9 +18,27 @@ Supports Conv2D, ReLU, MaxPool, Linear, Flatten, and Softmax layers, with LeNet 
 ## Build
 ```bash
 make
-## Example Output
-MiniCNN LeNet inference test
-Accuracy: 0.8450 (8450/10000)
+## Example Predictions
+
+### MNIST
+
+![MNIST Example 1](assets/mnist_example1.png)
+![MNIST Example 2](assets/mnist_example2.png)
+![MNIST Example 3](assets/mnist_example3.png)
+
+### Fashion-MNIST
+
+![Fashion Example 1](assets/fashion_example1.png)
+![Fashion Example 2](assets/fashion_example2.png)
+![Fashion Example 3](assets/fashion_example3.png)
+
+## Results
+
+| Dataset        | Accuracy |
+|----------------|----------|
+| MNIST          | 0.9839   |
+| Fashion-MNIST  | 0.8450   |
+
 ## Acknowledgement
 
 This project was developed as part of the course
