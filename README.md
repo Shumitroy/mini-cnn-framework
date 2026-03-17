@@ -56,7 +56,23 @@ Optional:
 | Fashion-MNIST | 0.8450   |
 
 ---
+---
 
+## Performance Optimization (Task 2)
+
+The `performance` branch implements an optimized convolution using the **im2col** technique.
+
+Instead of performing direct convolution with nested loops, the input tensor is transformed into a matrix representation, allowing more efficient computation.
+
+### Improvements
+
+- Reduced runtime compared to baseline direct convolution
+- Better cache utilization
+- More efficient computation for repeated inference
+
+This demonstrates a transition from a correctness-focused implementation (Task 1) to a performance-optimized system (Task 2), which is critical in edge AI and real-time systems.
+
+---
 ## Example Predictions
 
 ### MNIST
