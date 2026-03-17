@@ -23,11 +23,6 @@ make
 ### MNIST
 
 ![MNIST Example 1](assets/mnist_example1.png)
-![MNIST Example 2](asse## Example Predictions
-
-### MNIST
-
-![MNIST Example 1](assets/mnist_example1.png)
 ![MNIST Example 2](assets/mnist_example2.png)
 ![MNIST Example 3](assets/mnist_example3.png)
 
@@ -36,7 +31,6 @@ make
 ![Fashion Example 1](assets/fashion_mnist_example1.png)
 ![Fashion Example 2](assets/fashion_mnist_example2.png)
 ![Fashion Example 3](assets/fashion_mnist_example3.png)
-
 ## Results
 
 | Dataset        | Accuracy |
